@@ -48,6 +48,7 @@
     "react": "16.2.0",
     "react-native": "^0.61.5",
     "react-native-easy-grid": "^0.2.2",
+    "react-native-image-grid": "^1.0.0",
     "react-navigation": "1.0.0-beta.21"
   }
 }
