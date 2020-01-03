@@ -22,6 +22,9 @@ var _ = Describe("Upload Service", func() {
 	Describe("Upload Picture", func() {
 
 		BeforeEach(func() {
+			picturesFolder := os.TempDir() + "upload_test/"
+			os.RemoveAll(picturesFolder)
+			Upload.Settings["picturesFolder"] = picturesFolder
 			bkr.Publish(Upload)
 			bkr.Start()
 		})
@@ -30,8 +33,7 @@ var _ = Describe("Upload Service", func() {
 			bkr.Stop()
 		})
 
-		It("upload.picture action should save the picture content to disk and metadata to the database", func(done Done) {
-
+		It("upload.picture action should save the picture content to disk and metadata to the database", func() {
 			user := "12345"
 			picture := loadPic("_test_/car1.jpg")
 			metadata := map[string]interface{}{
@@ -47,9 +49,9 @@ var _ = Describe("Upload Service", func() {
 			Expect(r.Error()).Should(BeNil())
 
 			fileId := r.String()
-			Expect(fileId).ShouldNot(Equal(""))
+			Expect(fileId).Should(BeARegularFile())
 
-			close(done)
+			//check db records
 		})
 	})
 })

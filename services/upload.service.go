@@ -8,13 +8,11 @@ import (
 	"image/png"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/moleculer-go/gateway/websocket"
 	"github.com/moleculer-go/moleculer"
 
 	"crypto/sha1"
-	 
 )
 
 var websocketMixin = &websocket.WebSocketMixin{
@@ -61,44 +59,63 @@ func hashPic(b []byte) string {
 }
 
 // saveToDisk save the image to disk and return the unique file Id for the picture. So it can be retrieved from anywhere with this id.
-func saveToDisk(user, imageType, pic64, baseFolder string) (fileId string, bytesSize int, err error) {
+func saveToDisk(user, imageType, pic64, baseFolder string) (picHash, fileId string, bytesSize int, err error) {
 	unbased, err := base64.StdEncoding.DecodeString(pic64)
 	if err != nil {
 		err = errors.New("Cannot decode base64 - source: " + err.Error())
-		return fileId, bytesSize, err
+		return picHash, fileId, bytesSize, err
 	}
-	picHash := hashPic(unbased)
+	picHash = hashPic(unbased)
 	r := bytes.NewReader(unbased)
 
-	path := baseFolder + "/pics_store/" + user + "/"
-	_ = os.MkdirAll(path, os.ModeDir)
+	path := baseFolder + user + "/"
+	_ = os.MkdirAll(path, os.ModePerm)
 
 	fileId = path + picHash + "." + imageType
-
+	bytesSize = len(unbased)
 	if imageType == "png" {
 		err = savePng(r, fileId)
 		if err != nil {
-			return fileId, bytesSize, err
+			return picHash, fileId, bytesSize, err
 		}
 	} else if imageType == "jpg" || imageType == "jpeg" {
 		err = saveJpg(r, fileId)
 		if err != nil {
-			return fileId, bytesSize, err
+			return picHash, fileId, bytesSize, err
 		}
+	} else {
+		err = errors.New("Invalid imageType: " + imageType)
+		return picHash, fileId, bytesSize, err
 	}
 
-	err = errors.New("Invalid imageType: " + imageType)
-
-	return fileId, bytesSize, err
+	return picHash, fileId, bytesSize, nil
 }
 
 // saveToDatabase saves the image metadata and it's diskid to the database, so it can be searched and displayed in other apps.
-func saveToDatabase(user, fileId string, metadata map[string]interface{}) string {
-	return ""
+func saveToDatabase(ctx moleculer.Context, user, fileId, picHash string, metadata map[string]interface{}) (string, error) {
+
+	return "", nil
 }
 
+//resolvePicturesFolder return the folder where the servie will store the uploaded images
+func resolvePicturesFolder(settings map[string]interface{}) string {
+	pf, exists := settings["picturesFolder"]
+	picturesFolder := ""
+	if pfS, valid := pf.(string); exists && valid {
+		picturesFolder = pfS
+	} else {
+		picturesFolder = "/pictures_store"
+	}
+	return picturesFolder
+}
+
+var settings map[string]interface{}
 var Upload = moleculer.ServiceSchema{
-	Name: "upload",
+	Name:     "upload",
+	Settings: map[string]interface{}{},
+	Started: func(ctx moleculer.BrokerContext, svc moleculer.ServiceSchema) {
+		settings = svc.Settings
+	},
 	Actions: []moleculer.Action{
 		{
 			Name: "picture",
@@ -107,14 +124,17 @@ var Upload = moleculer.ServiceSchema{
 				pic64 := params.Get("picture").String()
 				metadata := params.Get("metadata").RawMap()
 				imageType := metadata["imageType"].(string)
-				baseFolder, _ := filepath.Abs("./")
-				baseFolder = baseFolder + "/_test_"
 
-				fileId, bytesSize, err := saveToDisk(user, imageType, pic64, baseFolder)
+				picturesFolder := resolvePicturesFolder(settings)
+				picHash, fileId, bytesSize, err := saveToDisk(user, imageType, pic64, picturesFolder)
 				if err != nil {
 					return err
 				}
-				picId := saveToDatabase(user, fileId, metadata)
+
+				picId, err := saveToDatabase(ctx, user, fileId, picHash, metadata)
+				if err != nil {
+					return err
+				}
 
 				ctx.Logger().Debug("picture uploaded succesfully! fileId: ", fileId, " bytesSize: ", bytesSize, " picId: ", picId)
 
