@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/moleculer-go/moleculer"
 	"github.com/moleculer-go/moleculer/broker"
@@ -12,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var logLevel = "fatal"
+var logLevel = "error"
 
 var _ = Describe("Upload Service", func() {
 
@@ -25,7 +26,7 @@ var _ = Describe("Upload Service", func() {
 			picturesFolder := os.TempDir() + "upload_test/"
 			os.RemoveAll(picturesFolder)
 			Upload.Settings["picturesFolder"] = picturesFolder
-			bkr.Publish(Upload)
+			bkr.Publish(Upload, UserMediaService)
 			bkr.Start()
 		})
 
@@ -37,7 +38,8 @@ var _ = Describe("Upload Service", func() {
 			user := "12345"
 			picture := loadPic("_test_/car1.jpg")
 			metadata := map[string]interface{}{
-				"size":      1024,
+				"width":     1024,
+				"height":    900,
 				"imageType": "jpg",
 			}
 
@@ -52,6 +54,24 @@ var _ = Describe("Upload Service", func() {
 			Expect(fileId).Should(BeARegularFile())
 
 			//check db records
+			time.Sleep(time.Millisecond)
+			um := <-bkr.Call("userMediaAggregate.find", map[string]interface{}{})
+			Expect(um.Error()).Should(Succeed())
+			Expect(um.Len()).Should(Equal(1))
+			Expect(um.First().Get("picHash").String()).Should(Equal("YVQLpQgKGn5QOHJJLV-c39mqAhk="))
+			Expect(um.First().Get("metadata").Get("imageType").String()).Should(Equal("jpg"))
+			Expect(um.First().Get("metadata").Get("bytesSize").String()).Should(Equal("92285"))
+			Expect(um.First().Get("metadata").Get("width").String()).Should(Equal("1024"))
+			Expect(um.First().Get("metadata").Get("height").String()).Should(Equal("900"))
+
+			am := <-bkr.Call("allMediaAggregate.find", map[string]interface{}{})
+			Expect(am.Error()).Should(Succeed())
+			Expect(am.Len()).Should(Equal(1))
+			Expect(am.First().Get("picHash").String()).Should(Equal("YVQLpQgKGn5QOHJJLV-c39mqAhk="))
+			Expect(am.First().Get("metadata").Get("imageType").String()).Should(Equal("jpg"))
+			Expect(am.First().Get("metadata").Get("bytesSize").String()).Should(Equal("92285"))
+			Expect(am.First().Get("metadata").Get("width").String()).Should(Equal("1024"))
+			Expect(am.First().Get("metadata").Get("height").String()).Should(Equal("900"))
 		})
 	})
 })

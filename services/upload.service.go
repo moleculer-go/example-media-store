@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/moleculer-go/gateway/websocket"
 	"github.com/moleculer-go/moleculer"
@@ -91,10 +92,19 @@ func saveToDisk(user, imageType, pic64, baseFolder string) (picHash, fileId stri
 	return picHash, fileId, bytesSize, nil
 }
 
-// saveToDatabase saves the image metadata and it's diskid to the database, so it can be searched and displayed in other apps.
-func saveToDatabase(ctx moleculer.Context, user, fileId, picHash string, metadata map[string]interface{}) (string, error) {
+// saveToDatabase saves the image metadata to the database, so it can be searched and displayed in the apps.
+func saveToDatabase(ctx moleculer.Context, user, fileId, picHash string, metadata map[string]string) error {
+	r := <-ctx.Call("userMedia.create", map[string]interface{}{
+		"user":     user,
+		"fileId":   fileId,
+		"picHash":  picHash,
+		"metadata": metadata,
+	})
+	if r.IsError() {
+		return r.Error()
+	}
 
-	return "", nil
+	return nil
 }
 
 //resolvePicturesFolder return the folder where the servie will store the uploaded images
@@ -107,6 +117,15 @@ func resolvePicturesFolder(settings map[string]interface{}) string {
 		picturesFolder = "/pictures_store"
 	}
 	return picturesFolder
+}
+
+func castMetadata(p moleculer.Payload) (out map[string]string) {
+	out = map[string]string{}
+	p.ForEach(func(k interface{}, v moleculer.Payload) bool {
+		out[k.(string)] = v.String()
+		return true
+	})
+	return out
 }
 
 var settings map[string]interface{}
@@ -122,21 +141,21 @@ var Upload = moleculer.ServiceSchema{
 			Handler: func(ctx moleculer.Context, params moleculer.Payload) interface{} {
 				user := params.Get("user").String()
 				pic64 := params.Get("picture").String()
-				metadata := params.Get("metadata").RawMap()
-				imageType := metadata["imageType"].(string)
-
+				metadata := castMetadata(params.Get("metadata"))
+				imageType := metadata["imageType"]
 				picturesFolder := resolvePicturesFolder(settings)
 				picHash, fileId, bytesSize, err := saveToDisk(user, imageType, pic64, picturesFolder)
 				if err != nil {
 					return err
 				}
+				metadata["bytesSize"] = strconv.Itoa(bytesSize)
 
-				picId, err := saveToDatabase(ctx, user, fileId, picHash, metadata)
+				err = saveToDatabase(ctx, user, fileId, picHash, metadata)
 				if err != nil {
 					return err
 				}
 
-				ctx.Logger().Debug("picture uploaded succesfully! fileId: ", fileId, " bytesSize: ", bytesSize, " picId: ", picId)
+				ctx.Logger().Debug("picture uploaded succesfully! fileId: ", fileId, " bytesSize: ", bytesSize)
 
 				return fileId
 			},
