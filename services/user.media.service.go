@@ -70,15 +70,15 @@ var UserMediaService = moleculer.ServiceSchema{
 // transformUserMedia transform the event to be stored in the user media aggregate
 func transformUserMedia(context moleculer.Context, event moleculer.Payload) interface{} {
 	p := event.Get("payload")
-	userId := p.Get("user")
-	return p.Remove("user").Add("userId", userId)
+	userId := p.Get("user").String()
+	return p.Remove("user", "eventId").Add("userId", userId)
 }
 
 // transformAllMedia transform the event to be stored in the all media aggregate
 func transformAllMedia(context moleculer.Context, event moleculer.Payload) interface{} {
 	p := event.Get("payload")
-	userPictureId := p.Get("userId").String()
-	p = p.Remove("userId", "fileId").Add("userPictureId", userPictureId)
+	userPictureId := p.Get("user").String()
+	p = p.Remove("userId", "fileId", "eventId").Add("userPictureId", userPictureId)
 	return p
 }
 

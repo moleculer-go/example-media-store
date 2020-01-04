@@ -114,7 +114,7 @@ func resolvePicturesFolder(settings map[string]interface{}) string {
 	if pfS, valid := pf.(string); exists && valid {
 		picturesFolder = pfS
 	} else {
-		picturesFolder = "/pictures_store"
+		picturesFolder = os.TempDir() + "/media_store/"
 	}
 	return picturesFolder
 }
