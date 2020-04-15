@@ -1,0 +1,11 @@
+{
+  "body": {
+    "content": "e30=",
+    "file": false,
+    "fileSize": false
+  },
+  "headers": {},
+  "method": "POST",
+  "title": "New HTTP Request",
+  "url": "http://localhost:3100/userMediaAggregate/find"
+}
