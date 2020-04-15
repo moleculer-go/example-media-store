@@ -141,7 +141,10 @@ var Upload = moleculer.ServiceSchema{
 			Handler: func(ctx moleculer.Context, params moleculer.Payload) interface{} {
 				user := params.Get("user").String()
 				pic64 := params.Get("picture").String()
-				metadata := castMetadata(params.Get("metadata"))
+				md := params.Get("metadata")
+				metadata := castMetadata(md)
+				ctx.Logger().Println("*******")
+				ctx.Logger().Println("metadata: ", metadata)
 				imageType := metadata["imageType"]
 				picturesFolder := resolvePicturesFolder(settings)
 				picHash, fileId, bytesSize, err := saveToDisk(user, imageType, pic64, picturesFolder)
@@ -149,14 +152,11 @@ var Upload = moleculer.ServiceSchema{
 					return err
 				}
 				metadata["bytesSize"] = strconv.Itoa(bytesSize)
-
 				err = saveToDatabase(ctx, user, fileId, picHash, metadata)
 				if err != nil {
 					return err
 				}
-
-				ctx.Logger().Debug("picture uploaded succesfully! fileId: ", fileId, " bytesSize: ", bytesSize)
-
+				ctx.Logger().Debug("picture uploaded successfully! fileId: ", fileId, " bytesSize: ", bytesSize)
 				return fileId
 			},
 		},
