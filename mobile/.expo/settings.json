@@ -2,9 +2,6 @@
   "hostType": "lan",
   "lanType": "ip",
   "dev": true,
-  "strict": false,
   "minify": false,
-  "urlType": "exp",
-  "urlRandomness": null,
-  "https": false
+  "urlRandomness": "pe-hkg"
 }
