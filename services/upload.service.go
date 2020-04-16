@@ -59,7 +59,8 @@ func hashPic(b []byte) string {
 	return sha
 }
 
-// saveToDisk save the image to disk and return the unique file Id for the picture. So it can be retrieved from anywhere with this id.
+//saveToDisk save the image to disk and return the unique file Id for the picture.
+//The pic can be retrieved from anywhere with this id.
 func saveToDisk(user, imageType, pic64, baseFolder string) (picHash, fileId string, bytesSize int, err error) {
 	unbased, err := base64.StdEncoding.DecodeString(pic64)
 	if err != nil {
@@ -103,7 +104,6 @@ func saveToDatabase(ctx moleculer.Context, user, fileId, picHash string, metadat
 	if r.IsError() {
 		return r.Error()
 	}
-
 	return nil
 }
 
@@ -129,11 +129,13 @@ func castMetadata(p moleculer.Payload) (out map[string]string) {
 }
 
 var settings map[string]interface{}
+var picturesFolder string
 var Upload = moleculer.ServiceSchema{
 	Name:     "upload",
 	Settings: map[string]interface{}{},
 	Started: func(ctx moleculer.BrokerContext, svc moleculer.ServiceSchema) {
 		settings = svc.Settings
+		picturesFolder = resolvePicturesFolder(settings)
 	},
 	Actions: []moleculer.Action{
 		{
@@ -143,10 +145,8 @@ var Upload = moleculer.ServiceSchema{
 				pic64 := params.Get("picture").String()
 				md := params.Get("metadata")
 				metadata := castMetadata(md)
-				ctx.Logger().Println("*******")
-				ctx.Logger().Println("metadata: ", metadata)
 				imageType := metadata["imageType"]
-				picturesFolder := resolvePicturesFolder(settings)
+
 				picHash, fileId, bytesSize, err := saveToDisk(user, imageType, pic64, picturesFolder)
 				if err != nil {
 					return err

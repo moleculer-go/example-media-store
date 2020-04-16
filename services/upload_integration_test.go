@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -55,16 +54,8 @@ var _ = Describe("Upload Service", func() {
 			Expect(fileId).Should(BeARegularFile())
 
 			//check db records
-			time.Sleep(time.Millisecond)
+			time.Sleep(time.Second)
 			um := <-bkr.Call("userMediaAggregate.find", map[string]interface{}{})
-			fmt.Println("*******")
-			fmt.Println("um: ", um)
-			fmt.Println("um.First(): ", um.First())
-			fmt.Println("um.First().Get('metadata'): ", um.First().Get("metadata"))
-			fmt.Println("um.First().Get('metadata').Get('imageType'): ", um.First().Get("metadata").Get("imageType"))
-			t := um.First().Get("metadata")
-			it := t.Get("imageType")
-			fmt.Println(it)
 			Expect(um.Error()).Should(Succeed())
 			Expect(um.Len()).Should(Equal(1))
 			Expect(um.First().Get("picHash").String()).Should(Equal("YVQLpQgKGn5QOHJJLV-c39mqAhk="))
