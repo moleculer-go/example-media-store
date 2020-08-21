@@ -26,7 +26,7 @@ var _ = Describe("Upload Service", func() {
 			picturesFolder := os.TempDir() + "upload_test/"
 			os.RemoveAll(picturesFolder)
 			Upload.Settings["picturesFolder"] = picturesFolder
-			bkr.Publish(Upload, UserMediaService)
+			bkr.Publish(Upload, MediaService)
 			bkr.Start()
 		})
 
@@ -55,7 +55,7 @@ var _ = Describe("Upload Service", func() {
 
 			//check db records
 			time.Sleep(time.Second)
-			um := <-bkr.Call("userMediaAggregate.find", map[string]interface{}{})
+			um := <-bkr.Call("userMedia.find", map[string]interface{}{})
 			Expect(um.Error()).Should(Succeed())
 			Expect(um.Len()).Should(Equal(1))
 			Expect(um.First().Get("picHash").String()).Should(Equal("YVQLpQgKGn5QOHJJLV-c39mqAhk="))
@@ -64,7 +64,7 @@ var _ = Describe("Upload Service", func() {
 			Expect(um.First().Get("metadata").Get("width").String()).Should(Equal("1024"))
 			Expect(um.First().Get("metadata").Get("height").String()).Should(Equal("900"))
 
-			am := <-bkr.Call("allMediaAggregate.find", map[string]interface{}{})
+			am := <-bkr.Call("allMedia.find", map[string]interface{}{})
 			Expect(am.Error()).Should(Succeed())
 			Expect(am.Len()).Should(Equal(1))
 			Expect(am.First().Get("picHash").String()).Should(Equal("YVQLpQgKGn5QOHJJLV-c39mqAhk="))

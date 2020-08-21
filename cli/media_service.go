@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/moleculer-go/example-media-store/services"
+	"github.com/moleculer-go/example-life-album/services"
 	gateway "github.com/moleculer-go/gateway"
 	"github.com/moleculer-go/gateway/websocket"
 	"github.com/moleculer-go/moleculer"
@@ -36,7 +36,7 @@ func main() {
 				Settings: getGatewayConfig(cmd),
 				Mixins:   []gateway.GatewayMixin{websocketMixin},
 			}
-			broker.Publish(gatewaySvc, services.Upload, services.UserMediaService)
+			broker.Publish(gatewaySvc, services.Upload, services.MediaService)
 			broker.Start()
 		})
 }

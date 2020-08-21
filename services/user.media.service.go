@@ -7,11 +7,11 @@ import (
 	"github.com/moleculer-go/store/sqlite"
 )
 
-var events = cqrs.EventStore("userMediaEventStore", storeFactory())
+var events = cqrs.EventStore("userMediaEvents", storeFactory())
 
-//userMediaAggregate store pictures by user
-var userMediaAggregate = cqrs.Aggregate(
-	"userMediaAggregate",
+//userMediaStore store pictures by user
+var userMediaStore = cqrs.Aggregate(
+	"userMedia",
 	storeFactory(map[string]interface{}{
 		"userId":   "string",
 		"fileId":   "string",
@@ -19,54 +19,51 @@ var userMediaAggregate = cqrs.Aggregate(
 		"metadata": "map",
 	}),
 	cqrs.NoSnapshot,
-).Snapshot("userMediaEventStore")
+).Snapshot("userMediaEvents")
 
-var allMediaAggregate = cqrs.Aggregate(
-	"allMediaAggregate",
+var allMediaStore = cqrs.Aggregate(
+	"allMedia",
 	storeFactory(map[string]interface{}{
 		"picHash":       "string",
 		"userPictureId": "string",
 		"metadata":      "map",
 	}),
 	cqrs.NoSnapshot,
-).Snapshot("userMediaEventStore")
+).Snapshot("userMediaEvents")
 
-var UserMediaService = moleculer.ServiceSchema{
-	Name: "userMedia",
+var MediaService = moleculer.ServiceSchema{
+	Name: "media",
 	Mixins: []moleculer.Mixin{
 		events.Mixin(),
-		allMediaAggregate.Mixin(),
-		userMediaAggregate.Mixin()},
+		allMediaStore.Mixin(),
+		userMediaStore.Mixin()},
 	Actions: []moleculer.Action{
+		events.MapAction("create", "media.created"),
 		{
-			Name:    "create",
-			Handler: events.PersistEvent("userMedia.created"),
+			Name:    "toUserMedia",
+			Handler: toUserMedia,
 		},
 		{
-			Name:    "transformUserMedia",
-			Handler: transformUserMedia,
-		},
-		{
-			Name:    "transformAllMedia",
-			Handler: transformAllMedia,
+			Name:    "toAllMedia",
+			Handler: toAllMedia,
 		},
 	},
 	Events: []moleculer.Event{
-		userMediaAggregate.On("userMedia.created").Create("userMedia.transformUserMedia"),
-		allMediaAggregate.On("userMedia.created").Update("userMedia.transformAllMedia"),
+		userMediaStore.On("media.created").Create("media.toUserMedia"),
+		allMediaStore.On("media.created").Update("media.toAllMedia"),
 	},
 }
 
-// transformUserMedia transform the event to be stored in the user media aggregate
-func transformUserMedia(context moleculer.Context, event moleculer.Payload) interface{} {
+// toUserMedia transform the event to be stored in the user media aggregate
+func toUserMedia(context moleculer.Context, event moleculer.Payload) interface{} {
 	p := event.Get("payload")
 	userId := p.Get("user").String()
 	userMedia := p.Remove("user", "eventId").Add("userId", userId)
 	return userMedia
 }
 
-// transformAllMedia transform the event to be stored in the all media aggregate
-func transformAllMedia(context moleculer.Context, event moleculer.Payload) interface{} {
+// toAllMedia transform the event to be stored in the all media aggregate
+func toAllMedia(context moleculer.Context, event moleculer.Payload) interface{} {
 	p := event.Get("payload")
 	userPictureId := p.Get("user").String()
 	p = p.Remove("userId", "fileId", "eventId").Add("userPictureId", userPictureId)

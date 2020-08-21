@@ -95,7 +95,7 @@ func saveToDisk(user, imageType, pic64, baseFolder string) (picHash, fileId stri
 
 // saveToDatabase saves the image metadata to the database, so it can be searched and displayed in the apps.
 func saveToDatabase(ctx moleculer.Context, user, fileId, picHash string, metadata map[string]string) error {
-	r := <-ctx.Call("userMedia.create", map[string]interface{}{
+	r := <-ctx.Call("media.create", map[string]interface{}{
 		"user":     user,
 		"fileId":   fileId,
 		"picHash":  picHash,
