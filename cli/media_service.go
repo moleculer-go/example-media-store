@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/moleculer-go/example-life-album/services"
+	"github.com/moleculer-go/example-media-store/services"
 	gateway "github.com/moleculer-go/gateway"
 	"github.com/moleculer-go/gateway/websocket"
 	"github.com/moleculer-go/moleculer"
